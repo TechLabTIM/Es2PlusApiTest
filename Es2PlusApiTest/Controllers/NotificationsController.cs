@@ -56,28 +56,33 @@ namespace Es2PlusApiTest.Controllers
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
             string certificatePath = @"C:\Projetos\ES2\tim\tim.crt";
+            string certificatePfx = @"C:\Projetos\ES2\certs\new_pass.pfx";
+            string certificatePassword = "Claryca236566@?@";
             //string certificatePassword = "password";
 
             var contentJson = new StringContent(JsonConvert.SerializeObject(content), Encoding.UTF8, "application/json");
 
             try
-            {
-                using (var hander = new HttpClientHandler())
+{
+                using (var handler = new HttpClientHandler())
                 {
-                    hander.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    hander.ClientCertificates.Add(new X509Certificate2(certificatePath));
-                    hander.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+
+                    // Load the .pfx file with the password
+                    var certificate = new X509Certificate2(certificatePfx, certificatePassword);
+                    handler.ClientCertificates.Add(certificate);
+
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
                     {
                         return errors == SslPolicyErrors.None;
                     };
 
-                    using (var client = new HttpClient(hander))
+                    using (var client = new HttpClient(handler))
                     {
                         var response = await client.PostAsync(url, contentJson);
                         if (response.IsSuccessStatusCode)
                         {
                             var responseContent = await response.Content.ReadAsStringAsync();
-                            // Wrap OkObjectResult in Task.FromResult
                             return Ok(response);
                         }
                         else
@@ -87,10 +92,12 @@ namespace Es2PlusApiTest.Controllers
                     }
                 }
             }
-            catch (Exception ex)
-            {
+catch (Exception ex)
+{
+                Console.WriteLine(ex.ToString()); // Or use your preferred logging mechanism
                 return StatusCode(500, "An error occurred while sending the notification.");
             }
+
         }
 
 
