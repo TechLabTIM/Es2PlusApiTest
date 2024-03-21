@@ -55,8 +55,7 @@ namespace Es2PlusApiTest.Controllers
         public async Task<IActionResult> SendNotification([FromBody] Object content)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
-            string certificatePath = @"C:\Projetos\ES2\tim\tim.crt";
-            string certificatePfx = @"C:\Projetos\ES2\certs\new_pass.pfx";
+            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
             string certificatePassword = "Claryca236566@?@";
             //string certificatePassword = "password";
 
@@ -67,32 +66,47 @@ namespace Es2PlusApiTest.Controllers
                 using (var handler = new HttpClientHandler())
                 {
                     handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                    handler.ClientCertificates.Add(new X509Certificate2(certificatePath, certificatePassword));
 
-                    // Load the .pfx file with the password
-                    var certificate = new X509Certificate2(certificatePfx, certificatePassword);
-                    handler.ClientCertificates.Add(certificate);
-
-                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
-                    {
-                        return errors == SslPolicyErrors.None;
-                    };
+                    // This is a security risk in production. It's bypassing certificate validation. Use only for testing.
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
 
                     using (var client = new HttpClient(handler))
                     {
-                        var response = await client.PostAsync(url, contentJson);
+                        // Replicate headers from Postman if needed
+                        var requestContent = new StringContent(
+                            JsonConvert.SerializeObject(new
+                            {
+                                header = new
+                                {
+                                    functionRequesterIdentifier = "2",
+                                    functionCallIdentifier = "TX-567"
+                                },
+                                iccid = "89550399000185000335"
+                            }),
+                            Encoding.UTF8,
+                            "application/json"
+                        );
+
+                        var response = await client.PostAsync(url, requestContent);
+                        var responseContent = await response.Content.ReadAsStringAsync();
+
                         if (response.IsSuccessStatusCode)
                         {
-                            var responseContent = await response.Content.ReadAsStringAsync();
-                            return Ok(response);
+                            return Ok(responseContent);
                         }
                         else
                         {
-                            return StatusCode(500, "An error occurred while sending the notification.");
+                            Console.WriteLine($"Error: {response.StatusCode}");
+                            Console.WriteLine($"Content: {responseContent}");
+                            return StatusCode((int)response.StatusCode, responseContent);
                         }
                     }
                 }
+
+
             }
-catch (Exception ex)
+            catch (Exception ex)
 {
                 Console.WriteLine(ex.ToString()); // Or use your preferred logging mechanism
                 return StatusCode(500, "An error occurred while sending the notification.");
