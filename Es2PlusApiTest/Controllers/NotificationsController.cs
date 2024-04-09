@@ -12,6 +12,48 @@ namespace Es2PlusApiTest.Controllers
     [ApiController]
     public class NotificationsController : ControllerBase
     {
+        private readonly string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
+        private readonly string certificatePassword = "Claryca236566@?@";
+        private readonly HttpClientHandler handler;
+        public NotificationsController()
+        {
+            handler = new HttpClientHandler();
+            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            handler.ClientCertificates.Add(new X509Certificate2(certificatePath, certificatePassword));
+            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+        }
+
+        public class Notification
+        {
+            public Header Header { get; set; }
+            public string Eid { get; set; }
+            public string Iccid { get; set; }
+            public string ProfileType { get; set; }
+            public DateTime Timestamp { get; set; }
+            public int NotificationPointId { get; set; }
+            public NotificationPointStatus NotificationPointStatus { get; set; }
+            // Include additional fields if necessary
+        }
+
+        public class Header
+        {
+            public string FunctionRequesterIdentifier { get; set; }
+            public string FunctionCallIdentifier { get; set; }
+            // Include additional fields if necessary
+        }
+
+        public class NotificationPointStatus
+        {
+            public string Status { get; set; }
+            public StatusCodeData StatusCodeData { get; set; }
+            // Include additional fields if necessary
+        }
+
+        public class StatusCodeData
+        {
+            // Define properties according to the schema if they are present
+        }
+
         [HttpPost("receive")]
         public IActionResult ReceiveNotification([FromBody] Notification notification)
         {
@@ -22,7 +64,7 @@ namespace Es2PlusApiTest.Controllers
 
             try
             {
-                // Validate notification
+                // Validate notification (adjust this method to check for required fields based on the provided schema)
                 if (!IsValid(notification))
                 {
                     return BadRequest("Invalid notification.");
@@ -31,25 +73,49 @@ namespace Es2PlusApiTest.Controllers
                 // Process the valid notification
                 ProcessNotification(notification);
 
-                // Return success response
-                return Ok("Notification processed successfully.");
+                // Since the expected response is HTTP 204 No Content, we return this status code
+                return NoContent();
             }
             catch (Exception ex)
             {
-               
-                return StatusCode(500, "An error occurred while processing the notification.");
+                // Log the exception here as needed
+                return StatusCode(500, "An error occurred while processing the notification: " + ex.Message);
             }
         }
 
         private bool IsValid(Notification notification)
         {
-            return !string.IsNullOrEmpty(notification.Id) && !string.IsNullOrEmpty(notification.Type);
+            // Expand validation logic based on your requirements
+            // Here's an example of checking if some properties are not null or empty
+            return notification.Header != null
+                   && !string.IsNullOrEmpty(notification.Eid)
+                   && !string.IsNullOrEmpty(notification.Iccid)
+                   && !string.IsNullOrEmpty(notification.ProfileType)
+                   && notification.NotificationPointId > 0
+                   && notification.NotificationPointStatus != null;
         }
+
         private void ProcessNotification(Notification notification)
         {
-            // Example processing: log message or perform action based on type
-            Console.WriteLine($"Processing notification: {notification.Message}");   
+            // Process based on notification.NotificationPointId
+            switch (notification.NotificationPointId)
+            {
+                case 3: // Handle Download Progress Info
+                        // Business logic for download progress info
+                    break;
+                case 4: // Handle Installation
+                        // Business logic for installation
+                    break;
+                // Add more cases for different NotificationPointIds
+                default:
+                    // Handle unknown NotificationPointId
+                    break;
+            }
+
+            // Log the notification
+            Console.WriteLine($"Received notification with ID: {notification.NotificationPointId}");
         }
+
 
         [HttpPost("send")]
         public async Task<IActionResult> SendNotification([FromBody] Object content)
