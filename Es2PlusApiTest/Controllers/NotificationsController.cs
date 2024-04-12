@@ -117,44 +117,69 @@ namespace Es2PlusApiTest.Controllers
         }
 
 
-        [HttpPost("send")]
-        public async Task<IActionResult> SendNotification([FromBody] Object content)
+        [HttpPost("downloadOrder")]
+        public async Task<IActionResult> DownloadOrder([FromBody] dynamic content)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
             string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
             string certificatePassword = "Claryca236566@?@";
-            //string certificatePassword = "password";
 
-            var contentJson = new StringContent(JsonConvert.SerializeObject(content), Encoding.UTF8, "application/json");
+            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+        }
+
+        [HttpPost("confirmOrder")]
+        public async Task<IActionResult> ConfirmOrder([FromBody] dynamic content)
+        {
+            // Replace with the correct URL for the confirmOrder endpoint
+            string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/confirmOrder";
+            // ... use the shared SendEs2PlusRequestAsync method
+            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
+            string certificatePassword = "Claryca236566@?@";
+
+            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+        }
+
+        [HttpPost("releaseProfile")]
+        public async Task<IActionResult> ReleaseProfile([FromBody] dynamic content)
+        {
+            // Replace with the correct URL for the releaseProfile endpoint
+            string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/releaseProfile";
+            // ... use the shared SendEs2PlusRequestAsync method
+            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
+            string certificatePassword = "Claryca236566@?@";
+
+            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+        }
+
+        [HttpPost("cancelOrder")]
+        public async Task<IActionResult> CancelOrder([FromBody] dynamic content)
+        {
+            // Replace with the correct URL for the cancelOrder endpoint
+            string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/cancelOrder";
+            // ... use the shared SendEs2PlusRequestAsync method
+            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
+            string certificatePassword = "Claryca236566@?@";
+
+            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+        }
+
+
+
+        private async Task<IActionResult> SendEs2PlusRequestAsync(string url, object payload, string certificatePath, string certificatePassword)
+        {
+            var contentJson = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
 
             try
-{
+            {
                 using (var handler = new HttpClientHandler())
                 {
                     handler.ClientCertificateOptions = ClientCertificateOption.Manual;
                     handler.ClientCertificates.Add(new X509Certificate2(certificatePath, certificatePassword));
-
-                    // This is a security risk in production. It's bypassing certificate validation. Use only for testing.
-                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true; // Remove or modify for production.
 
                     using (var client = new HttpClient(handler))
                     {
-                        // Replicate headers from Postman if needed
-                        var requestContent = new StringContent(
-                            JsonConvert.SerializeObject(new
-                            {
-                                header = new
-                                {
-                                    functionRequesterIdentifier = "2",
-                                    functionCallIdentifier = "TX-567"
-                                },
-                                iccid = "89550399000185000335"
-                            }),
-                            Encoding.UTF8,
-                            "application/json"
-                        );
-
-                        var response = await client.PostAsync(url, requestContent);
+                        var response = await client.PostAsync(url, contentJson);
                         var responseContent = await response.Content.ReadAsStringAsync();
 
                         if (response.IsSuccessStatusCode)
@@ -169,16 +194,14 @@ namespace Es2PlusApiTest.Controllers
                         }
                     }
                 }
-
-
             }
             catch (Exception ex)
-{
+            {
                 Console.WriteLine(ex.ToString()); // Or use your preferred logging mechanism
-                return StatusCode(500, "An error occurred while sending the notification.");
+                return StatusCode(500, "An error occurred while sending the request: " + ex.Message);
             }
-
         }
+
 
 
 
