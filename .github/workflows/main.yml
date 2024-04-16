@@ -19,7 +19,7 @@ jobs:
         dotnet-version: '7.0' # Ensure your self-hosted runner has .NET 7.0 installed
 
     - name: Restore dependencies
-      run: dotnet restore MySolution.sln
+      run: dotnet restore
 
     - name: Build
       run: dotnet build --no-restore -c Release
