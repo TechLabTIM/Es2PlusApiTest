@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 
 namespace Es2PlusApiTest.Controllers
 {
@@ -12,15 +13,17 @@ namespace Es2PlusApiTest.Controllers
     [ApiController]
     public class NotificationsController : ControllerBase
     {
-        private readonly string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
-        private readonly string certificatePassword = "Claryca236566@?@";
-        private readonly HttpClientHandler handler;
-        public NotificationsController()
+        private readonly HttpClientHandler handler = new HttpClientHandler();
+        private readonly IConfiguration _configuration;
+
+        public NotificationsController(IConfiguration configuration)
         {
-            handler = new HttpClientHandler();
+            _configuration = configuration;
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            string certificatePath = _configuration["CertificateSettings:CertificatePath"];
+            string certificatePassword = _configuration["CertificateSettings:CertificatePassword"];
             handler.ClientCertificates.Add(new X509Certificate2(certificatePath, certificatePassword));
-            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
         }
 
         public class Notification
@@ -121,8 +124,8 @@ namespace Es2PlusApiTest.Controllers
         public async Task<IActionResult> DownloadOrder([FromBody] dynamic content)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
-            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
-            string certificatePassword = "Claryca236566@?@";
+            string certificatePath = _configuration["CertificateSettings:CertificatePath"];
+            string certificatePassword = _configuration["CertificateSettings:CertificatePassword"];
 
             return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
         }
@@ -133,8 +136,9 @@ namespace Es2PlusApiTest.Controllers
             // Replace with the correct URL for the confirmOrder endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/confirmOrder";
             // ... use the shared SendEs2PlusRequestAsync method
-            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
-            string certificatePassword = "Claryca236566@?@";
+            string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
+            string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
+
 
             return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
         }
@@ -145,8 +149,12 @@ namespace Es2PlusApiTest.Controllers
             // Replace with the correct URL for the releaseProfile endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/releaseProfile";
             // ... use the shared SendEs2PlusRequestAsync method
-            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
-            string certificatePassword = "Claryca236566@?@";
+
+            string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
+            string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
+
+
+
 
             return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
         }
@@ -157,8 +165,9 @@ namespace Es2PlusApiTest.Controllers
             // Replace with the correct URL for the cancelOrder endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/cancelOrder";
             // ... use the shared SendEs2PlusRequestAsync method
-            string certificatePath = @"C:\projetos\tim\timcert_new.pfx";
-            string certificatePassword = "Claryca236566@?@";
+            string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
+            string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
+
 
             return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
         }
@@ -167,40 +176,48 @@ namespace Es2PlusApiTest.Controllers
 
         private async Task<IActionResult> SendEs2PlusRequestAsync(string url, object payload, string certificatePath, string certificatePassword)
         {
-            var contentJson = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+            StringContent contentJson;
 
             try
             {
-                using (var handler = new HttpClientHandler())
+                string jsonString;
+                if (payload is JsonElement jsonElement)
                 {
-                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    handler.ClientCertificates.Add(new X509Certificate2(certificatePath, certificatePassword));
-                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true; // Remove or modify for production.
+                    jsonString = jsonElement.GetRawText();
+                }
+                else
+                {
+                    jsonString = JsonConvert.SerializeObject(payload);
+                }
 
-                    using (var client = new HttpClient(handler))
+                Console.WriteLine($"Serialized JSON Payload: {jsonString}");  // Log para diagnóstico
+                contentJson = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+                using (var client = new HttpClient(handler))
+                {
+                    var response = await client.PostAsync(url, contentJson);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Response content: {responseContent}");
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        var response = await client.PostAsync(url, contentJson);
-                        var responseContent = await response.Content.ReadAsStringAsync();
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            return Ok(responseContent);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Error: {response.StatusCode}");
-                            Console.WriteLine($"Content: {responseContent}");
-                            return StatusCode((int)response.StatusCode, responseContent);
-                        }
+                        return Ok(responseContent);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {response.StatusCode}");
+                        return StatusCode((int)response.StatusCode, responseContent);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString()); // Or use your preferred logging mechanism
-                return StatusCode(500, "An error occurred while sending the request: " + ex.Message);
+                Console.WriteLine($"Error during serialization or HTTP request: {ex.Message}");
+                return StatusCode(500, $"Error in sending request: {ex.Message}");
             }
         }
+
+
 
 
 
