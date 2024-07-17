@@ -57,7 +57,7 @@ namespace Es2PlusApiTest.Controllers
             // Define properties according to the schema if they are present
         }
 
-        [HttpPost("gsma/rsp2/es2/handleDownloadProgressInfo")]
+        [HttpPost("gsma/rsp2/es2plus/handleDownloadProgressInfo")]
         public IActionResult ReceiveNotification([FromBody] Notification notification)
         {
             if (notification == null)
