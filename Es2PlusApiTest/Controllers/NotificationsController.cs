@@ -103,11 +103,11 @@ namespace Es2PlusApiTest.Controllers
             // Process based on notification.NotificationPointId
             switch (notification.NotificationPointId)
             {
-                case 3: // Handle Download Progress Info
-                        // Business logic for download progress info
+                case 3: 
+
                     break;
-                case 4: // Handle Installation
-                        // Business logic for installation
+                case 4: 
+
                     break;
                 // Add more cases for different NotificationPointIds
                 default:
