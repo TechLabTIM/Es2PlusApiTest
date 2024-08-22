@@ -38,12 +38,6 @@ namespace Es2PlusApiTest.Controllers
             // Include additional fields if necessary
         }
 
-        public class Header
-        {
-            public string FunctionRequesterIdentifier { get; set; }
-            public string FunctionCallIdentifier { get; set; }
-            // Include additional fields if necessary
-        }
 
         public class NotificationPointStatus
         {
@@ -103,11 +97,27 @@ namespace Es2PlusApiTest.Controllers
             // Process based on notification.NotificationPointId
             switch (notification.NotificationPointId)
             {
-                case 3: 
+                case 3:
+                    Console.WriteLine("Download Confirmed!", notification.NotificationPointStatus);
+
 
                     break;
-                case 4: 
+                case 4:
+                    Console.WriteLine("Instalation Confirmed", notification.NotificationPointStatus);
 
+                    break;
+
+                case 100:
+                    Console.WriteLine("ESIM Enabled", notification.NotificationPointStatus);
+                    break;
+
+                case 101:
+                    Console.WriteLine("ESIM Disabled", notification); 
+                    
+                    break;
+
+                case 102:
+                    Console.WriteLine("ESIM Deleted", notification, notification.NotificationPointStatus);
                     break;
                 // Add more cases for different NotificationPointIds
                 default:
@@ -121,60 +131,68 @@ namespace Es2PlusApiTest.Controllers
 
 
         [HttpPost("downloadOrder")]
-        public async Task<IActionResult> DownloadOrder([FromBody] dynamic content)
+        public async Task<IActionResult> DownloadOrder([FromBody] DownloadOrderRequest request)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
             string certificatePath = _configuration["CertificateSettings:CertificatePath"];
             string certificatePassword = _configuration["CertificateSettings:CertificatePassword"];
 
-            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+            var response = await SendEs2PlusRequestAsync(url, request, certificatePath, certificatePassword);
+
+            var downloadOrderResponse = JsonConvert.DeserializeObject<DownloadOrderResponse>(response);
+
+            return Ok(downloadOrderResponse);
         }
+
 
         [HttpPost("confirmOrder")]
-        public async Task<IActionResult> ConfirmOrder([FromBody] dynamic content)
+        public async Task<IActionResult> ConfirmOrder([FromBody] ConfirmOrderRequest request)
         {
-            // Replace with the correct URL for the confirmOrder endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/confirmOrder";
-            // ... use the shared SendEs2PlusRequestAsync method
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
             string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
 
+            var response = await SendEs2PlusRequestAsync(url, request, certificatePath, certificatePassword);
 
-            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+            var confirmOrderResponse = JsonConvert.DeserializeObject<ConfirmOrderResponse>(response);
+
+            return Ok(confirmOrderResponse);
         }
+
 
         [HttpPost("releaseProfile")]
-        public async Task<IActionResult> ReleaseProfile([FromBody] dynamic content)
+        public async Task<IActionResult> ReleaseProfile([FromBody] ReleaseProfileRequest request)
         {
-            // Replace with the correct URL for the releaseProfile endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/releaseProfile";
-            // ... use the shared SendEs2PlusRequestAsync method
-
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
             string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
 
+            var response = await SendEs2PlusRequestAsync(url, request, certificatePath, certificatePassword);
 
+            var releaseProfileResponse = JsonConvert.DeserializeObject<ReleaseProfileResponse>(response);
 
-
-            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+            return Ok(releaseProfileResponse);
         }
+
 
         [HttpPost("cancelOrder")]
-        public async Task<IActionResult> CancelOrder([FromBody] dynamic content)
+        public async Task<IActionResult> CancelOrder([FromBody] CancelOrderRequest request)
         {
-            // Replace with the correct URL for the cancelOrder endpoint
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/cancelOrder";
-            // ... use the shared SendEs2PlusRequestAsync method
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
             string certificatePassword = Environment.GetEnvironmentVariable("CERTIFICATE_PASSWORD") ?? _configuration["CertificateSettings:CertificatePassword"];
 
+            var response = await SendEs2PlusRequestAsync(url, request, certificatePath, certificatePassword);
 
-            return await SendEs2PlusRequestAsync(url, content, certificatePath, certificatePassword);
+            var cancelOrderResponse = JsonConvert.DeserializeObject<CancelOrderResponse>(response);
+
+            return Ok(cancelOrderResponse);
         }
 
 
 
-        private async Task<IActionResult> SendEs2PlusRequestAsync(string url, object payload, string certificatePath, string certificatePassword)
+
+        private async Task<string> SendEs2PlusRequestAsync(string url, object payload, string certificatePath, string certificatePassword)
         {
             StringContent contentJson;
 
@@ -201,19 +219,18 @@ namespace Es2PlusApiTest.Controllers
 
                     if (response.IsSuccessStatusCode)
                     {
-                        return Ok(responseContent);
+                        return responseContent;
                     }
                     else
                     {
-                        Console.WriteLine($"Error: {response.StatusCode}");
-                        return StatusCode((int)response.StatusCode, responseContent);
+                        return null;
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error during serialization or HTTP request: {ex.Message}");
-                return StatusCode(500, $"Error in sending request: {ex.Message}");
+                return null;
             }
         }
 
