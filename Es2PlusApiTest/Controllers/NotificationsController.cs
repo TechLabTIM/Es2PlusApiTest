@@ -239,7 +239,7 @@ namespace Es2PlusApiTest.Controllers
                 {
                     Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
                 }
-                return StatusCode(500, $"Error in sending request: {ex.Message}");
+                return ("An error occurred while sending the request: " + ex.Message);
             }
         }
 
