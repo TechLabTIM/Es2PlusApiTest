@@ -195,6 +195,11 @@ namespace Es2PlusApiTest.Controllers
 
                 using (var client = new HttpClient(handler))
                 {
+                    client.DefaultRequestHeaders.Add("X-Admin-Protocol", "gsma/rsp/v2.2.0");
+                    client.DefaultRequestHeaders.Add("User-Agent", "gsma-rsp-Ipad");
+                    client.DefaultRequestHeaders.Add("functionRequesterIdentifier", "2");
+                    client.DefaultRequestHeaders.Add("functionCallIdentifier", "TX-567");
+
                     var response = await client.PostAsync(url, contentJson);
                     var responseContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Response content: {responseContent}");
@@ -213,6 +218,10 @@ namespace Es2PlusApiTest.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error during serialization or HTTP request: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
                 return StatusCode(500, $"Error in sending request: {ex.Message}");
             }
         }

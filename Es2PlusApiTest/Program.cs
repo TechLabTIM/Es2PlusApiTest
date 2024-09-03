@@ -3,6 +3,17 @@ using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS policy configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 var certificatePath = builder.Configuration.GetValue<string>("CertificateSettings:CertificatePath")
     ?? Environment.GetEnvironmentVariable("CERTIFICATE_PATH");
 var certificatePassword = builder.Configuration.GetValue<string>("CertificateSettings:CertificatePassword")
@@ -40,6 +51,9 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 //app.UseAuthorization();
+
+// Enable CORS with the specified policy
+app.UseCors("CorsPolicy");
 
 app.UseEndpoints(endpoints =>
 {
