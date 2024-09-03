@@ -131,7 +131,7 @@ namespace Es2PlusApiTest.Controllers
 
 
         [HttpPost("downloadOrder")]
-        public async Task<IActionResult> DownloadOrder([FromBody] DownloadOrderRequest request)
+        public async Task<IActionResult> DownloadOrder([FromBody] dynamic request)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/downloadOrder";
             string certificatePath = _configuration["CertificateSettings:CertificatePath"];
@@ -146,7 +146,7 @@ namespace Es2PlusApiTest.Controllers
 
 
         [HttpPost("confirmOrder")]
-        public async Task<IActionResult> ConfirmOrder([FromBody] ConfirmOrderRequest request)
+        public async Task<IActionResult> ConfirmOrder([FromBody] dynamic request)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/confirmOrder";
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
@@ -161,7 +161,7 @@ namespace Es2PlusApiTest.Controllers
 
 
         [HttpPost("releaseProfile")]
-        public async Task<IActionResult> ReleaseProfile([FromBody] ReleaseProfileRequest request)
+        public async Task<IActionResult> ReleaseProfile([FromBody] dynamic request)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/releaseProfile";
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
@@ -176,7 +176,7 @@ namespace Es2PlusApiTest.Controllers
 
 
         [HttpPost("cancelOrder")]
-        public async Task<IActionResult> CancelOrder([FromBody] CancelOrderRequest request)
+        public async Task<IActionResult> CancelOrder([FromBody] dynamic request)
         {
             string url = "https://valides2plus.validereachdpplus.com:8445/gsma/rsp2/es2plus/cancelOrder";
             string certificatePath = Environment.GetEnvironmentVariable("CERTIFICATE_PATH") ?? _configuration["CertificateSettings:CertificatePath"];
@@ -228,6 +228,7 @@ namespace Es2PlusApiTest.Controllers
                     }
                     else
                     {
+                        //return the error that caused not to be successed
                         return null;
                     }
                 }
@@ -242,11 +243,6 @@ namespace Es2PlusApiTest.Controllers
                 return ("An error occurred while sending the request: " + ex.Message);
             }
         }
-
-
-
-
-
 
     }
 }
